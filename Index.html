@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h2 {
+            color: #333;
+        }
+        #todo-app {
+            display: none;
+        }
+        button {
+            padding: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 10px;
+            width: 200px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Login Form -->
+    <div id="login-form">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username" />
+        <input type="password" id="password" placeholder="Password" />
+        <button onclick="login()">Login</button>
+        <p>Don't have an account? <a href="#" onclick="showRegister()">Register</a></p>
+    </div>
+
+    <!-- Todo App -->
+    <div id="todo-app">
+        <h2>Todo App</h2>
+        <input type="text" id="new-todo" placeholder="Add a new task" />
+        <button onclick="addTodo()">Add Todo</button>
+        <ul id="todo-list"></ul>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        const apiUrl = 'http://localhost:5000/api'; // Change to your server's URL
+
+        // Function to handle login
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            fetch(`${apiUrl}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    showTodoApp();
+                    fetchTodos();
+                } else {
+                    alert('Invalid credentials');
+                }
+            });
+        }
+
+        // Function to switch to Todo app view
+        function showTodoApp() {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('todo-app').style.display = 'block';
+        }
+
+        // Function to logout the user
+        function logout() {
+            localStorage.removeItem('token');
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('todo-app').style.display = 'none';
+        }
+
+        // Function to fetch the list of todos
+        function fetchTodos() {
+            const token = localStorage.getItem('token');
+            fetch(`${apiUrl}/todos`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const todoList = document.getElementById('todo-list');
+                todoList.innerHTML = '';
+                data.forEach(todo => {
+                    const li = document.createElement('li');
+                    li.textContent = todo.task;
+                    todoList.appendChild(li);
+                });
+            });
+        }
+
+        // Function to add a new todo
+        function addTodo() {
+            const newTodo = document.getElementById('new-todo').value;
+            const token = localStorage.getItem('token');
+
+            fetch(`${apiUrl}/todos`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ task: newTodo })
+            })
+            .then(response => response.json())
+            .then(data => {
+                fetchTodos();
+                document.getElementById('new-todo').value = ''; // Clear input field
+            });
+        }
+
+        // Function to register a new user
+        function showRegister() {
+            const username = prompt("Enter a username for registration:");
+            const password = prompt("Enter a password:");
+
+            fetch(`${apiUrl}/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Registration successful! You can now log in.');
+            })
+            .catch(err => {
+                alert('Registration failed');
+            });
+        }
+
+    </script>
+</body>
+</html>

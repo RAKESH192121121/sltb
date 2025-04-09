@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Forecast App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            width: 400px;
+            border-radius: 10px;
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .search-bar {
+            width: 80%;
+            padding: 10px;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            font-size: 1rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .weather-info {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        .weather-info span {
+            font-weight: bold;
+        }
+
+        .error-message {
+            color: red;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .forecast {
+            margin-top: 20px;
+        }
+
+        .forecast-item {
+            display: inline-block;
+            width: 70px;
+            margin: 10px;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .forecast-item img {
+            width: 40px;
+            height: 40px;
+        }
+
+        .forecast-item p {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Weather Forecast</h1>
+        <input type="text" class="search-bar" id="city-input" placeholder="Enter city name" />
+        <button class="button" onclick="getWeather()">Get Weather</button>
+
+        <div id="weather-info" class="weather-info"></div>
+        <div id="forecast" class="forecast"></div>
+        <div id="error-message" class="error-message"></div>
+    </div>
+
+    <script>
+        const apiKey = 'your-api-key-here'; // You need to get an API key from OpenWeatherMap
+
+        // Function to fetch weather data
+        async function getWeather() {
+            const city = document.getElementById('city-input').value.trim();
+
+            if (!city) {
+                return;
+            }
+
+            document.getElementById('error-message').textContent = ''; // Reset error message
+            document.getElementById('weather-info').textContent = 'Loading...';
+            document.getElementById('forecast').innerHTML = ''; // Clear previous forecast
+
+            try {
+                // Fetch current weather data
+                const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`);
+                const weatherData = await weatherResponse.json();
+
+                if (weatherData.cod === '404') {
+                    document.getElementById('error-message').textContent = 'City not found. Please try again.';
+                    return;
+                }
+
+                // Display weather information
+                displayWeather(weatherData);
+
+                // Fetch 5-day forecast data
+                const forecastResponse = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${apiKey}&units=metric`);
+                const forecastData = await forecastResponse.json();
+                displayForecast(forecastData);
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Error fetching weather data. Please try again later.';
+            }
+        }
+
+        // Function to display current weather info
+        function displayWeather(data) {
+            const weatherElement = document.getElementById('weather-info');
+            const temp = data.main.temp;
+            const weatherCondition = data.weather[0].description;
+            const humidity = data.main.humidity;
+            const windSpeed = data.wind.speed;
+            const cityName = data.name;
+
+            weatherElement.innerHTML = `
+                <p><span>City:</span> ${cityName}</p>
+                <p><span>Temperature:</span> ${temp}°C</p>
+                <p><span>Condition:</span> ${weatherCondition}</p>
+                <p><span>Humidity:</span> ${humidity}%</p>
+                <p><span>Wind Speed:</span> ${windSpeed} km/h</p>
+            `;
+        }
+
+        // Function to display 5-day weather forecast
+        function displayForecast(data) {
+            const forecastElement = document.getElementById('forecast');
+            const forecastList = data.list.filter((item, index) => index % 8 === 0); // 5-day forecast at 12-hour intervals
+
+            forecastList.forEach(item => {
+                const date = new Date(item.dt * 1000);
+                const temp = item.main.temp;
+                const description = item.weather[0].description;
+                const icon = item.weather[0].icon;
+
+                const forecastItem = document.createElement('div');
+                forecastItem.classList.add('forecast-item');
+                forecastItem.innerHTML = `
+                    <img src="https://openweathermap.org/img/wn/${icon}.png" alt="${description}">
+                    <p>${date.toLocaleDateString()}</p>
+                    <p>${temp}°C</p>
+                    <p>${description}</p>
+                `;
+                forecastElement.appendChild(forecastItem);
+            });
+        }
+    </script>
+
+</body>
+</html>
